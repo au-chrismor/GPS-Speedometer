@@ -13,6 +13,8 @@
 #define CLK   6
 #define CS    5
 
+#define USER_NAME "Chris"
+
 TinyGPS gps;
 SoftwareSerial ss(8, 9);
 File logFile;
@@ -86,7 +88,7 @@ void loop()
 #endif
     logFile = SD.open("test.csv", FILE_WRITE);
     if(logFile) {
-      logFile.println(String(YY) + "," + String(MM) + "," + String(DD) + String(hrs) + "," + String(mins) + "," + String(secs) + "," + String(flat,6) + "," + String(flon,6) + "," + String(altit / 100, 1) + "," + String(gps.f_speed_kmph(), 1) + "," + String(gps.f_course(), 1));
+      logFile.println(String(USER_NAME), + "," + String(YY) + "," + String(MM) + "," + String(DD) + "," + String(hrs) + "," + String(mins) + "," + String(secs) + "," + String(flat,6) + "," + String(flon,6) + "," + String(altit / 100, 1) + "," + String(gps.f_speed_kmph(), 1) + "," + String(gps.f_course(), 1));
     }
     logFile.close();
     displaySpeed(gps.f_speed_kmph());
