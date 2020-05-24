@@ -27,13 +27,21 @@ void setup()
   ss.begin(9600);
   Serial.print("Initializing SD card...");
 
-  if (!SD.begin(4)) {
-    Serial.println("initialization failed!");
-    while (1);
-  } 
   lc.shutdown(0,false);
   lc.setIntensity(0,7);
   lc.clearDisplay(0);
+
+  // Start the memory card.  Warn user if there's a problem
+  if (!SD.begin(4)) {
+    lc.setDigit(0, 7, 0x0d, false);
+    lc.setDigit(0, 6, 0x01, false);
+    lc.setDigit(0, 5, 0x05, false);
+    lc.setDigit(0, 4, 0x0c, false);
+    lc.setDigit(0, 2, 0x0b, false);
+    lc.setDigit(0, 1, 0x0a, false);
+    lc.setDigit(0, 0, 0x0d, false);
+    while (1);
+  } 
   Serial.println("initialization done.");
   Serial.println("Ready");
 
@@ -88,7 +96,7 @@ void loop()
 #endif
     logFile = SD.open("test.csv", FILE_WRITE);
     if(logFile) {
-      logFile.println(String(USER_NAME), + "," + String(YY) + "," + String(MM) + "," + String(DD) + "," + String(hrs) + "," + String(mins) + "," + String(secs) + "," + String(flat,6) + "," + String(flon,6) + "," + String(altit / 100, 1) + "," + String(gps.f_speed_kmph(), 1) + "," + String(gps.f_course(), 1));
+      logFile.println(String(USER_NAME) + "," + String(YY) + "," + String(MM) + "," + String(DD) + "," + String(hrs) + "," + String(mins) + "," + String(secs) + "," + String(flat,6) + "," + String(flon,6) + "," + String(altit / 100, 1) + "," + String(gps.f_speed_kmph(), 1) + "," + String(gps.f_course(), 1));
     }
     logFile.close();
     displaySpeed(gps.f_speed_kmph());
@@ -96,19 +104,30 @@ void loop()
   }
   
   gps.stats(&chars, &sentences, &failed);
-  if (chars == 0)
+  if (chars == 0) {
     Serial.println("** No characters received from GPS: check wiring **");
+    lc.setDigit(0, 7, 0x0E, true);
+    lc.setDigit(0, 6, 0x00, true);
+    lc.setDigit(0, 5, 0x01, true);
+  }
 }
 
 void displaySpeed(float spd) {
-  String strSpeed = String(int(spd));
-
+  int ispd = int(spd);
+  
   lc.clearDisplay(0);
-  // The following line is useful to debug the display logic
-  //Serial.println(strSpeed + " - " + strSpeed.length());
-  for(int i = strSpeed.length() - 1; i > -1 ; i--) {
-    lc.setDigit(0, int(strSpeed.length() - i) - 1, strSpeed.substring(i, i -1).toInt(), false);
-  }
+
+  // Split the incoming speed into digits
+  byte digit2 = byte((ispd / 100) % 10);
+  byte digit1 = byte((ispd / 10) % 10);
+  byte digit0 = byte((ispd % 10));
+
+  // Display the data and also implement Leading-Zero Blanking (LZB)
+  lc.setDigit(0, 0, digit0, false);
+  if(spd > 9.99)
+    lc.setDigit(0, 1, digit1, false);
+  if(spd > 99.99)
+    lc.setDigit(0, 2, digit2, false);
 }
 
 void displaySats(int sats) {
